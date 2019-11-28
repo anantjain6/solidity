@@ -30,12 +30,13 @@ set -e
 
 if [ ! -f "$1" -o -z "$2" ]
 then
-  echo "Usage: $0 <path to soljson.js> <version>"
+  echo "Usage: $0 <path to soljson.js> <path to soljson.wasm> <version>"
   exit 1
 fi
 
-SOLJSON="$1"
-VERSION="$2"
+SOLJSON_JS="$1"
+SOLJSON_WASM="$2"
+VERSION="$3"
 
 DIR=$(mktemp -d)
 (
@@ -51,7 +52,9 @@ DIR=$(mktemp -d)
     # Replace soljson with current build
     echo "Replacing soljson.js"
     rm -f soljson.js
-    cp "$SOLJSON" soljson.js
+	rm -f soljson.wasm
+    cp "$SOLJSON_JS" soljson.js
+    cp "$SOLJSON_WASM" soljson.wasm
 
     # Update version (needed for some tests)
     echo "Updating package.json to version $VERSION"

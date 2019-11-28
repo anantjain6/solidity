@@ -1,4 +1,4 @@
-﻿Test suite,Tests
+Test suite,Tests
 **Command line**,Passing unknown options to CLI
 ,Passing files that are not found
 ,Passing files that are not files

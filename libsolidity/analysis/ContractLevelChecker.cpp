@@ -69,8 +69,8 @@ vector<ASTPointer<UserDefinedTypeName>> sortByContract(vector<ASTPointer<UserDef
 	return sorted;
 }
 
-template <class T>
-bool hasEqualNameAndParameters(T const& _a, T const& _b)
+template <class T, class B>
+bool hasEqualNameAndParameters(T const& _a, B const& _b)
 {
 	return
 		_a.name() == _b.name() &&
@@ -243,6 +243,35 @@ void ContractLevelChecker::checkIllegalOverrides(ContractDefinition const& _cont
 
 	checkModifierOverrides(funcSet, modSet, _contract.functionModifiers());
 
+	for (auto const* stateVar: _contract.stateVariables())
+	{
+		if (!stateVar->isPublic())
+			continue;
+
+		bool found = false;
+		for (
+			auto it = find_if(funcSet.begin(), funcSet.end(), MatchByName{stateVar->name()});
+			it != funcSet.end();
+			it = find_if(++it, funcSet.end(), MatchByName{stateVar->name()})
+		)
+		{
+			if ((*it)->visibility() != Declaration::Visibility::External)
+				overrideError(*stateVar, **it, "Base function must be external when overridden by public state variable.");
+
+			if (!hasEqualNameAndParameters(*stateVar, **it))
+				continue;
+
+			checkFunctionOverride(*stateVar, **it);
+			found = true;
+		}
+
+		if (!found && stateVar->overrides())
+			m_errorReporter.typeError(
+				stateVar->overrides()->location(),
+				"Public state variable has override specified but does not override anything."
+			);
+	}
+
 	for (FunctionDefinition const* function: _contract.definedFunctions())
 	{
 		if (function->isConstructor())
@@ -262,63 +291,73 @@ void ContractLevelChecker::checkIllegalOverrides(ContractDefinition const& _cont
 	}
 }
 
-bool ContractLevelChecker::checkFunctionOverride(FunctionDefinition const& _function, FunctionDefinition const& _super)
+template<class T>
+bool ContractLevelChecker::checkFunctionOverride(T const& _overriding, FunctionDefinition const& _super)
 {
-	FunctionTypePointer functionType = FunctionType(_function).asCallableFunction(false);
+	string overridingName;
+
+	if constexpr(std::is_same<FunctionDefinition, T>::value)
+		overridingName = "function";
+	else
+		overridingName = "public state variable";
+
+	FunctionTypePointer functionType = FunctionType(_overriding).asCallableFunction(false);
 	FunctionTypePointer superType = FunctionType(_super).asCallableFunction(false);
 
 	bool success = true;
 
-	if (!functionType->hasEqualParameterTypes(*superType))
-		return true;
+	solAssert(functionType->hasEqualParameterTypes(*superType), "Override doesn't have equal parameters!");
 
-	if (!_function.overrides())
+	if (!_overriding.overrides())
 	{
-		overrideError(_function, _super, "Overriding function is missing 'override' specifier.");
+		overrideError(_overriding, _super, "Overriding " + overridingName + " is missing 'override' specifier.");
 		success = false;
 	}
 
 	if (!_super.virtualSemantics())
 	{
-		overrideError( _super, _function, "Trying to override non-virtual function. Did you forget to add \"virtual\"?", "Overriding function is here:");
+		overrideError( _super, _overriding, "Trying to override non-virtual function. Did you forget to add \"virtual\"?", "Overriding " + overridingName + " is here:");
 		success = false;
 	}
 
 	if (!functionType->hasEqualReturnTypes(*superType))
 	{
-		overrideError(_function, _super, "Overriding function return types differ.");
+		overrideError(_overriding, _super, "Overriding " + overridingName + " return types differ.");
 		success = false;
 	}
 
-	if (!_function.annotation().superFunction)
-		_function.annotation().superFunction = &_super;
+	if constexpr(std::is_same<T, FunctionDefinition>::value)
+		if (!_overriding.annotation().superFunction)
+			_overriding.annotation().superFunction = &_super;
 
-	if (_function.visibility() != _super.visibility())
+	if (_overriding.visibility() != _super.visibility())
 	{
 		// Visibility change from external to public is fine.
 		// Any other change is disallowed.
 		if (!(
 			_super.visibility() == FunctionDefinition::Visibility::External &&
-			_function.visibility() == FunctionDefinition::Visibility::Public
+			_overriding.visibility() == FunctionDefinition::Visibility::Public
 		))
 		{
-			overrideError(_function, _super, "Overriding function visibility differs.");
+			overrideError(_overriding, _super, "Overriding " + overridingName + " visibility differs.");
 			success = false;
 		}
 	}
-	if (_function.stateMutability() != _super.stateMutability())
-	{
-		overrideError(
-			_function,
-			_super,
-			"Overriding function changes state mutability from \"" +
-			stateMutabilityToString(_super.stateMutability()) +
-			"\" to \"" +
-			stateMutabilityToString(_function.stateMutability()) +
-			"\"."
-		);
-		success = false;
-	}
+
+	if constexpr(std::is_same<T, FunctionDefinition>::value)
+		if (_overriding.stateMutability() != _super.stateMutability())
+		{
+			overrideError(
+				_overriding,
+				_super,
+				"Overriding function changes state mutability from \"" +
+				stateMutabilityToString(_super.stateMutability()) +
+				"\" to \"" +
+				stateMutabilityToString(_overriding.stateMutability()) +
+				"\"."
+			);
+			success = false;
+		}
 
 	return success;
 }
@@ -348,12 +387,12 @@ void ContractLevelChecker::overrideListError(FunctionDefinition const& function,
 	);
 }
 
-void ContractLevelChecker::overrideError(CallableDeclaration const& function, CallableDeclaration const& super, string message, string secondaryMsg)
+void ContractLevelChecker::overrideError(Declaration const& _overriding, Declaration const& _super, string _message, string _secondaryMsg)
 {
 	m_errorReporter.typeError(
-		function.location(),
-		SecondarySourceLocation().append(secondaryMsg, super.location()),
-		message
+		_overriding.location(),
+		SecondarySourceLocation().append(_secondaryMsg, _super.location()),
+		_message
 	);
 }
 

@@ -1,9 +1,10 @@
 abstract contract X { function test() internal virtual returns (uint256); }
 contract Y is X {
-    uint256 public test = 42;
+    uint256 public override test = 42;
 }
 contract T {
     constructor() public { new Y(); }
 }
 // ----
-// DeclarationError: (98-122): Identifier already declared.
+// TypeError: (98-131): Base function must be external when overridden by public state variable.
+// TypeError: (98-131): Overriding public state variable visibility differs.

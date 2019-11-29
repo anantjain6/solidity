@@ -512,12 +512,17 @@ jobs:
       - run: mkdir -p workspace
       - run: cp emscripten_build/libsolc/soljson.js workspace/soljson.js
       - run: cp emscripten_build/libsolc/soljson.wasm workspace/soljson.wasm
+      - run: scripts/travis-emscripten/embed_wasm_b64.sh emscripten_build/libsolc/soljson.js emscripten_build/libsolc/soljson.wasm workspace/soljson.wasm.b64.js
+      - store_artifacts:
+          path: workspace/soljson.wasm.b64.js
+          destination: soljson.wasm.b64.js
       - run: scripts/get_version.sh > workspace/version.txt
       - persist_to_workspace:
           root: workspace
           paths:
             - soljson.js
             - soljson.wasm
+            - soljson.wasm.b64.js
             - version.txt
 
   # x64 ASAN build, for testing for memory related bugs

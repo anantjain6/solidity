@@ -490,7 +490,7 @@ The JSON output typically consists of an array of nodes (with an associated ``no
                     {
                         "constant": false,
                         "id": 6,
-                        "name": "x",
+                        "name"modifiers: "x",
                         "nodeType": "VariableDeclaration",
                         "scope": 16,
                         "src": "24:44:1",
@@ -638,11 +638,11 @@ The JSON output typically consists of an array of nodes (with an associated ``no
                         "stateMutability": "view",
                         "typeDescriptions":
                         {
-                            "typeIdentifier": "t_function_external_view$__$returns$_t_uint256_$",
+                            "typeDescriptions": "t_function_external_view$__$returns$_t_uint256_$",
                             "typeString": "function () view external returns (uint256)"
                         },
                         "visibility": "external"
-                        },
+                        },typeDescriptions
                         "value": null,
                         "visibility": "internal"
                     }
@@ -677,33 +677,34 @@ The JSON output typically consists of an array of nodes (with an associated ``no
 
 Fields:
 
-- absolutePath
-- exportedSymbols
+- ``absolutePath``: The "absolute" (in the compiler sense) path of this source unit
+- ``exportedSymbols``: All global (exported) symbols
 - ``id``
-- nodeType
+- ``nodeType``: The type of node/declaration
 - ``baseContracts``: Contracts this contract inherits from
 - ``contractDependencies``: Libraries this contract uses
 - ``contractKind``: Is this an interface, contract, or library
-- documentation
-- fullyImplemented
-- linearizedBaseContracts
+- ``documentation``
+- ``fullyImplemented``: ``false`` if this function does not have a body
+- ``linearizedBaseContracts``: Direct and indirect contracts from derived to base, including the contract
 - ``name``: User-defined name of the contract, function, library or variable
-- body
+- ``body``: Body of the node that likely contains further nodes
 - ``src``:
-- statements
-- implemented
-- kind
-- modifiers
-- parameters
-- constant
-- scope
-- stateVariable
-- storageLocation
-- typeDescriptions
-    - typeIdentifier
-    - typeString
-- typeName
-- returnParameterTypes
-- value
-- visibility
-- stateMutability
+- ``statements``:  Brace-enclosed block containing zero or more statements
+- ``implemented``: ``false`` if this is an abstract contract
+- ``kind``: Human readable node type
+- ``modifiers``: Array of function modifiers
+- ``parameters``: Array of function parameters
+- ``constant``: Is parameter declared as a constant
+- ``scope``: Scope of this declaration
+- ``stateVariable``: Is this a contract state variable
+- ``storageLocation``: Memory storage location for variable
+- ``typeDescriptions``
+    - ``typeIdentifier``
+    - ``typeString``: Code statement that declared the variable or function type
+- ``typeName``
+- ``returnParameters``: Parameters returned by a function
+- ``returnParameterTypes`` Types of parameters returned by a function
+- ``value``: Defined value of variable
+- ``visibility``: Visibility of the function or variable
+- ``stateMutability``: State mutability for address type

@@ -109,6 +109,8 @@ struct FunctionDefinitionAnnotation: ASTAnnotation, DocumentedAnnotation
 	/// The function this function overrides, if any. This is always the closest
 	/// in the linearized inheritance hierarchy.
 	FunctionDefinition const* superFunction = nullptr;
+	/// The set of functions this function overrides.
+	std::set<FunctionDefinition const*> baseFunctions;
 	/// Pointer to the contract this function is defined in
 	ContractDefinition const* contract = nullptr;
 };

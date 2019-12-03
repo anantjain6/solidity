@@ -694,13 +694,15 @@ void ContractLevelChecker::checkAmbiguousOverrides(ContractDefinition const& _co
 			continue;
 
 		// Trace all functions back to the non-overriding functions they ultimately override.
+		// TODO: this is also not quite right. Actually we need to look for Cut Vertices in the
+		// override-graph.
 		set<FunctionDefinition const*> nonOverridingBaseFunctions;
-		while(!ambiguousFunctions.empty())
+		while (!ambiguousFunctions.empty())
 		{
 			FunctionDefinition const* current = *ambiguousFunctions.begin();
 			ambiguousFunctions.erase(ambiguousFunctions.begin());
 			if (!current->annotation().baseFunctions.empty())
-				for (auto const &baseFunction: current->annotation().baseFunctions)
+				for (auto const& baseFunction: current->annotation().baseFunctions)
 					ambiguousFunctions.insert(baseFunction);
 			else
 				nonOverridingBaseFunctions.insert(current);

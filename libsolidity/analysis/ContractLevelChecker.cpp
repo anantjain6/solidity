@@ -290,8 +290,6 @@ bool ContractLevelChecker::checkFunctionOverride(FunctionDefinition const& _func
 		success = false;
 	}
 
-	if (!_function.annotation().superFunction)
-		_function.annotation().superFunction = &_super;
 	_function.annotation().baseFunctions.emplace(&_super);
 
 	if (_function.visibility() != _super.visibility())
@@ -649,12 +647,12 @@ void ContractLevelChecker::checkAmbiguousOverrides(ContractDefinition const& _co
 
 	auto const resolvedBases = resolveDirectBaseContracts(_contract);
 
-	FunctionMultiSet inheritedFuncs = inheritedFunctions(&_contract);;
+	FunctionMultiSet inheritedFuncs = inheritedFunctions(&_contract);
 
 	// Check the sets of the most-inherited functions
 	for (auto it = inheritedFuncs.cbegin(); it != inheritedFuncs.cend(); it = inheritedFuncs.upper_bound(*it))
 	{
-		auto [begin,end] = inheritedFuncs.equal_range(*it);
+		auto [begin, end] = inheritedFuncs.equal_range(*it);
 
 		// Only one function
 		if (next(begin) == end)

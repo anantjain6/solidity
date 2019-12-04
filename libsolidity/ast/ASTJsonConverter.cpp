@@ -344,7 +344,6 @@ bool ASTJsonConverter::visit(FunctionDefinition const& _node)
 		make_pair("documentation", _node.documentation() ? Json::Value(*_node.documentation()) : Json::nullValue),
 		make_pair("kind", TokenTraits::toString(_node.kind())),
 		make_pair("stateMutability", stateMutabilityToString(_node.stateMutability())),
-		make_pair("superFunction", idOrNull(_node.annotation().superFunction)),
 		make_pair("visibility", Declaration::visibilityToString(_node.visibility())),
 		make_pair("overrides", _node.overrides() ? toJson(_node.overrides()->overrides()) : Json::nullValue),
 		make_pair("parameters", toJson(_node.parameterList())),

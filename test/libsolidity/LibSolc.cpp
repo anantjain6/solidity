@@ -62,7 +62,7 @@ Json::Value compile(string const& _input, CStyleReadFileCallback _callback = nul
 	string output(solidity_compile(_input.c_str(), _callback, nullptr));
 	Json::Value ret;
 	BOOST_REQUIRE(jsonParseStrict(output, ret));
-	solidity_free();
+	solidity_reset();
 	return ret;
 }
 
@@ -74,14 +74,14 @@ BOOST_AUTO_TEST_CASE(read_version)
 {
 	string output(solidity_version());
 	BOOST_CHECK(output.find(VersionString) == 0);
-	solidity_free();
+	solidity_reset();
 }
 
 BOOST_AUTO_TEST_CASE(read_license)
 {
 	string output(solidity_license());
 	BOOST_CHECK(output.find("GNU GENERAL PUBLIC LICENSE") != string::npos);
-	solidity_free();
+	solidity_reset();
 }
 
 BOOST_AUTO_TEST_CASE(standard_compilation)

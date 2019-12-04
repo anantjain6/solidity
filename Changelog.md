@@ -24,6 +24,8 @@ Breaking changes:
  * AST: Inline assembly is exported as structured JSON instead of plain string.
  * General: ``private`` cannot be used together with ``virtual``.
  * Inheritance: State variable shadowing is now disallowed.
+ * libsolc: ``solidity_free()`` renamed to ``solidity_reset()`` and new ``char* solidity_alloc(size_t len)`` and ``void solidity_free(char* ptr)`` added.
+ * libsolc: ``solidity_compile`` now returns a string that must be explicitly freed via ``solidity_free()``
 
 Language Features:
  * Allow global enums and structs.

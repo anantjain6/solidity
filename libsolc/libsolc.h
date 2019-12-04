@@ -23,6 +23,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 #define SOLC_NOEXCEPT noexcept
@@ -42,9 +43,11 @@ extern "C" {
 /// @param o_contents A pointer to the contents of the file, if found.
 /// @param o_error A pointer to an error message, if there is one.
 ///
-/// If the callback is not supported, o_contents and o_error should be set to NULL.
+/// The file (as well as error) contents that is to be allocated by the callback implementor must use the
+/// solidity_alloc() API to allocate its underlying storage and use solidity_free() for explicit release,
+/// or solidity_reset() to deallocate any memory that was being allocated via solidity_alloc() before.
 ///
-/// The two pointers (o_contents and o_error) should be heap-allocated and are free'd by the caller.
+/// If the callback is not supported, *o_contents and *o_error must be set to NULL.
 typedef void (*CStyleReadFileCallback)(void* _context, char const* _kind, char const* _data, char** o_contents, char** o_error);
 
 /// Returns the complete license document.
@@ -57,11 +60,26 @@ char const* solidity_license() SOLC_NOEXCEPT;
 /// The pointer returned must not be freed by the caller.
 char const* solidity_version() SOLC_NOEXCEPT;
 
+/// Allocates a chunk of memory of @p size bytes.
+///
+/// Use this function inside callbacks to allocate data that is to be passed to the compiler,
+/// and use solidity_free() to free this memory again, or solidity_reset() to free it all.
+///
+/// This function will return NULL if the requested memory region could not be allocated.
+char* solidity_alloc(size_t _size) SOLC_NOEXCEPT;
+
+/// Explicitly frees the memory that was being allocated with solidity_alloc(size_t size);
+///
+/// Important, this call will abort() in case of any invalid argument being passed to this call.
+void solidity_free(char* _data) SOLC_NOEXCEPT;
+
 /// Takes a "Standard Input JSON" and an optional callback (can be set to null). Returns
 /// a "Standard Output JSON". Both are to be UTF-8 encoded.
 ///
 /// @param _input The input JSON to process.
-/// @param _readCallback The optional callback pointer. Can be NULL.
+/// @param _readCallback The optional callback pointer. Can be NULL, but if not NULL,
+///                      it will be called by the compiler to request additional input.
+///                      Please see the documentation of the type for details.
 /// @param _readContext An optional context pointer passed to _readCallback. Can be NULL.
 ///
 /// @returns A pointer to the result. The pointer returned must not be freed by the caller.
@@ -69,8 +87,9 @@ char const* solidity_compile(char const* _input, CStyleReadFileCallback _readCal
 
 /// Frees up any allocated memory.
 ///
-/// NOTE: the pointer returned by solidity_compile is invalid after calling this!
-void solidity_free() SOLC_NOEXCEPT;
+/// NOTE: the pointer returned by solidity_compile as well as any other pointer retrieved via solidity_alloc
+/// is invalid after calling this!
+void solidity_reset() SOLC_NOEXCEPT;
 
 #ifdef __cplusplus
 }

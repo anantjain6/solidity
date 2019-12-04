@@ -687,28 +687,96 @@ void ContractLevelChecker::checkAmbiguousOverrides(ContractDefinition const& _co
 			ssl.append("Definition here: ", (*begin)->location());
 		}
 
-		// Make sure the functions are not from the same base contract
-		if (ambiguousFunctions.size() == 1)
-			continue;
 
-		// Trace all functions back to the non-overriding functions they ultimately override.
-		// TODO: this is also not quite right. Actually we need to look for Cut Vertices in the
-		// override-graph.
-		set<FunctionDefinition const*> nonOverridingBaseFunctions;
-		while (!ambiguousFunctions.empty())
+		// TODO: extract to a generic algorithm
+		struct BaseGraph {
+			std::map<FunctionDefinition const*, int> nodes;
+			std::map<int, std::set<int>> edges;
+			int numNodes = 2;
+
+			void addEdge(int a, int b)
+			{
+				edges[a].insert(b);
+				edges[b].insert(a);
+			}
+
+			int visit(FunctionDefinition const* def)
+			{
+				int currentNode = -1;
+				auto it = nodes.find(def);
+				if (it == nodes.end())
+				{
+					currentNode = numNodes++;
+					nodes[def] = currentNode;
+				}
+				else
+					return it->second;
+
+				if (!def->overrides())
+					addEdge(currentNode, 1);
+				else
+					for (auto const* base: def->annotation().baseFunctions)
+					{
+						auto it = nodes.find(base);
+						if (it == nodes.end())
+						{
+							auto dst = visit(base);
+							addEdge(currentNode, dst);
+						}
+						else
+						{
+							addEdge(currentNode, it->second);
+						}
+					}
+
+				return currentNode;
+			}
+		};
+
+		BaseGraph g;
+		for (auto const* f: ambiguousFunctions)
 		{
-			FunctionDefinition const* current = *ambiguousFunctions.begin();
-			ambiguousFunctions.erase(ambiguousFunctions.begin());
-			if (!current->annotation().baseFunctions.empty())
-				for (auto const& baseFunction: current->annotation().baseFunctions)
-					ambiguousFunctions.insert(baseFunction);
-			else
-				nonOverridingBaseFunctions.insert(current);
+			auto dst = g.visit(f);
+			g.addEdge(0, dst);
 		}
 
-		// If the function is defined in a unique shared base class and only implemented in one path to that base class,
-		// we don't require overriding.
-		if (implementedBaseFunctions.size() == 1 && nonOverridingBaseFunctions.size() == 1)
+		struct CutVertexFinder
+		{
+			std::set<int> visited{};
+			int time = 0;
+			std::map<int, int> disc{};
+			std::map<int, int> low{};
+
+			bool run(BaseGraph const& g, int u, int parent = -1)
+			{
+				visited.insert(u);
+				disc[u] = low[u] = time + 1;
+				int child = 0;
+				for (int v: g.edges.at(u)) {
+					if (v == parent) continue;
+					if (!visited.count(v))
+					{
+						++child;
+						++time;
+						if (run(g, v, u))
+							return true;
+						low[u] = min(low[u], low[v]);
+
+						if (parent == -1 && child > 1)
+							return true;
+						if (parent != -1 && low[v] >= disc[u])
+							return true;
+					}
+					else
+						low[u] = min(low[u], disc[v]);
+				}
+				return false;
+			}
+		};
+
+		CutVertexFinder cutVertexFinder;
+
+		if (cutVertexFinder.run(g, 0))
 			continue;
 
 		m_errorReporter.typeError(

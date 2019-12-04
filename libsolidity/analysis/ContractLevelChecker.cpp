@@ -255,13 +255,14 @@ void ContractLevelChecker::checkIllegalOverrides(ContractDefinition const& _cont
 			it = find_if(++it, funcSet.end(), MatchByName{stateVar->name()})
 		)
 		{
-			if ((*it)->visibility() != Declaration::Visibility::External)
-				overrideError(*stateVar, **it, "Base function must be external when overridden by public state variable.");
-
 			if (!hasEqualNameAndParameters(*stateVar, **it))
 				continue;
 
-			checkFunctionOverride(*stateVar, **it);
+			if ((*it)->visibility() != Declaration::Visibility::External)
+				overrideError(*stateVar, **it, "Base function must be external when overridden by public state variable.");
+			else
+				checkFunctionOverride(*stateVar, **it);
+
 			found = true;
 		}
 

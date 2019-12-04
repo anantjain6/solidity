@@ -7,4 +7,3 @@ contract T {
 }
 // ----
 // TypeError: (98-131): Base function must be external when overridden by public state variable.
-// TypeError: (98-131): Overriding public state variable visibility differs.
